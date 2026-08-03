@@ -23,6 +23,20 @@ const getProjectId = (req: Request): string => {
   return projectId;
 };
 
+const getMemberId = (req: Request): string => {
+  const memberId = req.params.memberId;
+
+  if (Array.isArray(memberId)) {
+    throw new Error("Invalid member id");
+  }
+
+  if (typeof memberId !== "string" || memberId.trim() === "") {
+    throw new Error("Invalid member id");
+  }
+
+  return memberId;
+};
+
 export const createProject = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authReq = req as AuthenticatedRequest;
@@ -116,6 +130,102 @@ export const deleteProject = async (req: Request, res: Response, next: NextFunct
 
     return sendProjectResponse(res, 200, {
       message: result.message,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const joinProject = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+
+    if (!authReq.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const result = await projectService.joinProject(req.body.inviteCode, authReq.user._id.toString());
+
+    return sendProjectResponse(res, 200, {
+      message: result.message,
+      project: result.project,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const leaveProject = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+
+    if (!authReq.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const projectId = getProjectId(req);
+    const result = await projectService.leaveProject(projectId, authReq.user._id.toString());
+
+    return sendProjectResponse(res, 200, {
+      message: result.message,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getProjectMembers = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+
+    if (!authReq.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const projectId = getProjectId(req);
+    const members = await projectService.getProjectMembers(projectId, authReq.user._id.toString());
+
+    return sendProjectResponse(res, 200, {
+      members,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const removeProjectMember = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+
+    if (!authReq.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const projectId = getProjectId(req);
+    const memberId = getMemberId(req);
+    const result = await projectService.removeProjectMember(projectId, memberId, authReq.user._id.toString());
+
+    return sendProjectResponse(res, 200, {
+      message: result.message,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const regenerateInviteCode = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+
+    if (!authReq.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const projectId = getProjectId(req);
+    const result = await projectService.regenerateInviteCode(projectId, authReq.user._id.toString());
+
+    return sendProjectResponse(res, 200, {
+      inviteCode: result.inviteCode,
     });
   } catch (error) {
     return next(error);

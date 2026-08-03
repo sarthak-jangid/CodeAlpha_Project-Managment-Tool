@@ -15,9 +15,11 @@ DELETE /api/projects/:projectId
 
 // Members ...
 
-POST /api/projects/:projectId/members
+POST /api/projects/join
 POST /api/projects/:projectId/leave
 GET /api/projects/:projectId/members
+DELETE /api/projects/:projectId/members/:memberId
+PATCH /api/projects/:projectId/invite-code
 
 // Tasks ...
 
