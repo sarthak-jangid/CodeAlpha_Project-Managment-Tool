@@ -33,6 +33,7 @@ DELETE /api/tasks/:taskId // Delete task
 
 // Comments ...
 
-GET /api/tasks/:taskId/comments
 POST /api/tasks/:taskId/comments
-DELETE /api/tasks/:taskId/comments/:commentId
+GET /api/tasks/:taskId/comments
+PATCH /api/comments/:commentId
+DELETE /api/comments/:commentId
