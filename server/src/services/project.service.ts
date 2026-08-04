@@ -26,6 +26,9 @@ const generateInviteCode = async () => {
 };
 
 export class ProjectService {
+
+  // Project CURD operations .................................................................
+
   async createProject(input: ICreateProjectInput, userId: string) {
     if (!input.name || input.name.trim() === "") {
       throw new Error("Project name is required.");
@@ -140,6 +143,9 @@ export class ProjectService {
       message: "Project deleted successfully",
     };
   }
+
+
+  // Member management operations ...................................................................
 
   async joinProject(inviteCode: string, userId: string) {
     if (!inviteCode || inviteCode.trim() === "") {
@@ -262,6 +268,8 @@ export class ProjectService {
       inviteCode,
     };
   }
+
+  
 }
 
 export const projectService = new ProjectService();

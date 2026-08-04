@@ -23,11 +23,13 @@ PATCH /api/projects/:projectId/invite-code
 
 // Tasks ...
 
-GET /api/projects/:projectId/tasks
-POST /api/projects/:projectId/tasks
-GET /api/tasks/:taskId
-PATCH /api/tasks/:taskId
-DELETE /api/tasks/:taskId
+POST /api/projects/:projectId/tasks // Create (assignedTo optional)
+GET /api/projects/:projectId/tasks // Get all project tasks
+GET /api/tasks/:taskId // Get single task
+PATCH /api/tasks/:taskId // Update task details
+PATCH /api/tasks/:taskId/assign // Assign or reassign task
+PATCH /api/tasks/:taskId/status // Change task status
+DELETE /api/tasks/:taskId // Delete task
 
 // Comments ...
 
