@@ -15,14 +15,15 @@ export interface IUpdateProjectInput {
 }
 
 const generateInviteCode = async () => {
-  const code = `PROJ-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-  const existingProject = await Project.findOne({ inviteCode: code });
+  while (true) {
+    const code = `PROJ-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
-  if (existingProject) {
-    return generateInviteCode();
+    const existingProject = await Project.findOne({ inviteCode: code });
+
+    if (!existingProject) {
+      return code;
+    }
   }
-
-  return code;
 };
 
 export class ProjectService {
