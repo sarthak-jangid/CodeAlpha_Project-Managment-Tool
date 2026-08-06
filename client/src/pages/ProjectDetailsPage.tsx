@@ -1,36 +1,131 @@
-import { Copy, RefreshCw, UserPlus, Users } from 'lucide-react';
+import {
+  Calendar,
+  CheckCircle2,
+  Copy,
+  Edit3,
+  MessageSquare,
+  RefreshCw,
+  Trash2,
+  UserPlus,
+  Users,
+  ListTodo,
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { getProjectById, getProjectMembers, regenerateInviteCode, removeProjectMember } from '../api/projectDetails';
+import { useNavigate, useParams } from 'react-router-dom';
+import { deleteProject, updateProject } from '../api/project';
+import {
+  getProjectById,
+  getProjectMembers,
+  regenerateInviteCode,
+  removeProjectMember,
+} from '../api/projectDetails';
+import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
 import { EmptyState } from '../components/common/EmptyState';
-import { Loader } from '../components/common/Loader';
 import { Navbar } from '../components/layout/Navbar';
 import { Sidebar } from '../components/layout/Sidebar';
+import { DeleteProjectDialog } from '../components/project/DeleteProjectDialog';
 import { InviteMemberModal } from '../components/project/InviteMemberModal';
 import { MemberCard } from '../components/project/MemberCard';
+import { ProjectFormModal } from '../components/project/ProjectFormModal';
+import { RemoveMemberDialog } from '../components/project/RemoveMemberDialog';
+import { TaskBoard } from '../components/task/TaskBoard';
 import { useAuth } from '../context/AuthContext';
 import type { Project, User } from '../types';
 
+type Toast = {
+  type: 'success' | 'error';
+  message: string;
+};
+
+const statusConfig: Record<
+  Project['status'],
+  { label: string; variant: 'planning' | 'active' | 'completed' | 'on_hold' }
+> = {
+  planning: { label: 'Planning', variant: 'planning' },
+  active: { label: 'Active', variant: 'active' },
+  completed: { label: 'Completed', variant: 'completed' },
+  on_hold: { label: 'On Hold', variant: 'on_hold' },
+};
+
+const ProjectDetailsSkeleton = () => (
+  <>
+    <Card className="animate-pulse p-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-3">
+          <div className="h-9 w-64 rounded-xl bg-white/10" />
+          <div className="h-4 w-full max-w-xl rounded-lg bg-white/5" />
+          <div className="h-4 w-48 rounded-lg bg-white/5" />
+        </div>
+        <div className="flex gap-3">
+          <div className="h-10 w-32 rounded-xl bg-white/10" />
+          <div className="h-10 w-32 rounded-xl bg-white/10" />
+        </div>
+      </div>
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="h-24 rounded-2xl bg-white/5" />
+        ))}
+      </div>
+      <div className="mt-6 h-28 rounded-2xl bg-white/5" />
+    </Card>
+
+    <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+      <Card className="animate-pulse p-6">
+        <div className="h-6 w-40 rounded-lg bg-white/10" />
+        <div className="mt-6 space-y-4">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="h-16 rounded-2xl bg-white/5" />
+          ))}
+        </div>
+      </Card>
+      <Card className="animate-pulse p-6">
+        <div className="h-6 w-32 rounded-lg bg-white/10" />
+        <div className="mt-6 space-y-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="h-24 rounded-2xl bg-white/5" />
+          ))}
+        </div>
+      </Card>
+    </div>
+  </>
+);
+
 const ProjectDetailsPage = () => {
   const { projectId } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
+
   const [project, setProject] = useState<Project | null>(null);
   const [members, setMembers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [inviteOpen, setInviteOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [toast, setToast] = useState<Toast | null>(null);
+
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [removeMemberOpen, setRemoveMemberOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<User | null>(null);
+  const [taskCount, setTaskCount] = useState(0);
+
+  const showToast = (type: Toast['type'], message: string) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 3200);
+  };
 
   const fetchProject = async () => {
     if (!projectId) return;
     try {
       setLoading(true);
       setError('');
-      const projectResponse = await getProjectById(projectId);
-      const membersResponse = await getProjectMembers(projectId);
+      const [projectResponse, membersResponse] = await Promise.all([
+        getProjectById(projectId),
+        getProjectMembers(projectId),
+      ]);
       setProject(projectResponse.project ?? null);
       setMembers(membersResponse.members ?? []);
     } catch (err: unknown) {
@@ -45,16 +140,27 @@ const ProjectDetailsPage = () => {
     void fetchProject();
   }, [projectId]);
 
-  const isOwner = useMemo(() => project?.owner === user?._id, [project, user]);
+  const isOwner = useMemo(
+    () => String(project?.owner) === String(user?._id),
+    [project, user],
+  );
+
+  const ownerUser = useMemo(
+    () => members.find((member) => String(member._id) === String(project?.owner)),
+    [members, project],
+  );
+
+  const status = project ? statusConfig[project.status] ?? statusConfig.planning : statusConfig.planning;
 
   const copyInviteCode = async () => {
     if (!project?.inviteCode) return;
     try {
       await navigator.clipboard.writeText(project.inviteCode);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
+      showToast('success', 'Invite code copied to clipboard.');
+      setTimeout(() => setCopied(false), 1500);
     } catch {
-      setError('Unable to copy invite code.');
+      showToast('error', 'Unable to copy invite code.');
     }
   };
 
@@ -63,40 +169,78 @@ const ProjectDetailsPage = () => {
     try {
       setSubmitting(true);
       const response = await regenerateInviteCode(projectId);
-      setProject((prev) => prev ? { ...prev, inviteCode: response.inviteCode } : prev);
+      setProject((prev) => (prev ? { ...prev, inviteCode: response.inviteCode } : prev));
+      showToast('success', 'Invite code regenerated successfully.');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unable to regenerate invite code.';
-      setError(message);
+      showToast('error', message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleRemoveMember = async (memberId: string) => {
-    if (!projectId || !window.confirm('Remove this member from the project?')) return;
-    try {
-      setSubmitting(true);
-      await removeProjectMember(projectId, memberId);
-      await fetchProject();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unable to remove member.';
-      setError(message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleJoinInvite = async (inviteCode: string) => {
+  const handleEditProject = async (payload: {
+    name: string;
+    description: string;
+    status: Project['status'];
+  }) => {
     if (!projectId) return;
     try {
       setSubmitting(true);
-      await fetch(`/${projectId}/${inviteCode}`);
-      setInviteOpen(false);
-    } catch {
-      setError('Unable to join project.');
+      await updateProject(projectId, payload);
+      setEditOpen(false);
+      await fetchProject();
+      showToast('success', 'Project updated successfully.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unable to update project.';
+      showToast('error', message);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!projectId) return;
+    try {
+      setSubmitting(true);
+      await deleteProject(projectId);
+      setDeleteOpen(false);
+      navigate('/dashboard');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unable to delete project.';
+      showToast('error', message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const openRemoveMemberDialog = (member: User) => {
+    setMemberToRemove(member);
+    setRemoveMemberOpen(true);
+  };
+
+  const handleRemoveMember = async () => {
+    if (!projectId || !memberToRemove) return;
+    try {
+      setSubmitting(true);
+      await removeProjectMember(projectId, memberToRemove._id);
+      setRemoveMemberOpen(false);
+      setMemberToRemove(null);
+      await fetchProject();
+      showToast('success', 'Member removed successfully.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unable to remove member.';
+      showToast('error', message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const canRemoveMember = (member: User) => {
+    if (!isOwner || !project) return false;
+    if (String(member._id) === String(project.owner)) return false;
+    if (String(member._id) === String(user?._id)) return false;
+    return true;
   };
 
   return (
@@ -108,45 +252,75 @@ const ProjectDetailsPage = () => {
           <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
             <div className="mx-auto flex max-w-7xl flex-col gap-6">
               {loading ? (
-                <div className="grid gap-4 lg:grid-cols-[1.5fr_0.8fr]">
-                  <Card className="p-6"><Loader label="Loading project details..." /></Card>
-                  <Card className="p-6"><Loader label="Loading members..." /></Card>
-                </div>
+                <ProjectDetailsSkeleton />
               ) : error ? (
-                <Card className="flex flex-col items-center justify-center gap-4 px-8 py-12 text-center">
-                  <RefreshCw className="h-6 w-6 text-slate-300" />
+                <Card className="flex animate-[fadeIn_220ms_ease-out] flex-col items-center justify-center gap-4 px-8 py-12 text-center">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-slate-300">
+                    <RefreshCw className="h-6 w-6" />
+                  </div>
                   <div>
                     <h3 className="text-lg font-semibold text-slate-100">Something went wrong</h3>
                     <p className="mt-2 text-sm text-slate-400">{error}</p>
                   </div>
-                  <Button variant="primary" onClick={() => void fetchProject()}>Retry</Button>
+                  <Button variant="primary" onClick={() => void fetchProject()}>
+                    Retry
+                  </Button>
                 </Card>
               ) : project ? (
-                <>
+                <div className="animate-[fadeIn_220ms_ease-out] space-y-6">
                   <Card className="overflow-hidden border-white/10 bg-slate-900/70 p-6 shadow-[0_18px_50px_rgba(2,8,23,0.28)] backdrop-blur-md">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="space-y-3">
+                    <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="space-y-4">
                         <div className="flex flex-wrap items-center gap-3">
-                          <h1 className="text-3xl font-semibold text-slate-100">{project.name}</h1>
-                          <span className="rounded-full border border-sky-400/20 bg-sky-500/10 px-3 py-1 text-sm text-sky-300">{project.status}</span>
+                          <h1 className="text-3xl font-semibold text-slate-100 sm:text-4xl">{project.name}</h1>
+                          <Badge variant={status.variant}>{status.label}</Badge>
                         </div>
-                        <p className="max-w-2xl text-sm text-slate-400">{project.description || 'No project description yet.'}</p>
+                        <p className="max-w-2xl text-sm leading-relaxed text-slate-400">
+                          {project.description || 'No project description yet.'}
+                        </p>
                         <div className="flex flex-wrap gap-4 text-sm text-slate-400">
-                          <span>Created {project.createdAt ? new Date(project.createdAt).toLocaleDateString() : '—'}</span>
-                          <span>Owner {project.owner}</span>
+                          <span className="inline-flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-slate-500" />
+                            Created{' '}
+                            {project.createdAt
+                              ? new Date(project.createdAt).toLocaleDateString(undefined, {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                })
+                              : '—'}
+                          </span>
+                          <span>
+                            Owner{' '}
+                            <span className="font-medium text-slate-200">
+                              {ownerUser?.name ?? 'Unknown'}
+                            </span>
+                          </span>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap gap-3">
-                        <Button variant="outline" onClick={copyInviteCode}>
+                        <Button variant="outline" onClick={() => void copyInviteCode()}>
                           <Copy className="mr-2 h-4 w-4" />
                           {copied ? 'Copied!' : 'Copy Invite Code'}
                         </Button>
                         {isOwner ? (
                           <>
-                            <Button variant="secondary" onClick={() => void handleRegenerateInviteCode()} disabled={submitting}>
+                            <Button
+                              variant="secondary"
+                              onClick={() => void handleRegenerateInviteCode()}
+                              disabled={submitting}
+                            >
                               <RefreshCw className="mr-2 h-4 w-4" />
                               Regenerate
+                            </Button>
+                            <Button variant="outline" onClick={() => setEditOpen(true)}>
+                              <Edit3 className="mr-2 h-4 w-4" />
+                              Edit Project
+                            </Button>
+                            <Button variant="danger" onClick={() => setDeleteOpen(true)}>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Project
                             </Button>
                             <Button variant="primary" onClick={() => setInviteOpen(true)}>
                               <UserPlus className="mr-2 h-4 w-4" />
@@ -157,63 +331,133 @@ const ProjectDetailsPage = () => {
                       </div>
                     </div>
 
-                    <div className="mt-6 grid gap-4 md:grid-cols-3">
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <p className="text-sm text-slate-400">Tasks</p>
-                        <p className="mt-2 text-2xl font-semibold text-slate-100">0</p>
+                    <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-sky-500/20">
+                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                          <ListTodo className="h-4 w-4" />
+                          Tasks
+                        </div>
+                        <p className="mt-2 text-2xl font-semibold text-slate-100">{taskCount}</p>
                       </div>
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <p className="text-sm text-slate-400">Members</p>
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-sky-500/20">
+                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                          <Users className="h-4 w-4" />
+                          Members
+                        </div>
                         <p className="mt-2 text-2xl font-semibold text-slate-100">{members.length}</p>
                       </div>
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <p className="text-sm text-slate-400">Comments</p>
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-sky-500/20">
+                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                          <MessageSquare className="h-4 w-4" />
+                          Comments
+                        </div>
                         <p className="mt-2 text-2xl font-semibold text-slate-100">0</p>
                       </div>
                     </div>
+
+                    {project.inviteCode ? (
+                      <div className="relative mt-6 overflow-hidden rounded-2xl border border-sky-400/20 bg-gradient-to-br from-sky-500/10 via-slate-900/40 to-slate-900/60 p-5">
+                        <p className="text-xs font-medium uppercase tracking-[0.2em] text-sky-400">
+                          Project Invite Code
+                        </p>
+                        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <p className="font-mono text-2xl font-semibold tracking-[0.15em] text-sky-200 sm:text-3xl">
+                            {project.inviteCode}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" size="sm" onClick={() => void copyInviteCode()}>
+                              <Copy className="mr-2 h-4 w-4" />
+                              {copied ? 'Copied!' : 'Copy'}
+                            </Button>
+                            {isOwner ? (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => void handleRegenerateInviteCode()}
+                                disabled={submitting}
+                              >
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Regenerate
+                              </Button>
+                            ) : null}
+                          </div>
+                        </div>
+                        {copied ? (
+                          <div className="absolute right-4 top-4 flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-300">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            Copied!
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </Card>
 
                   <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
                     <Card className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h2 className="text-xl font-semibold text-slate-100">Project Information</h2>
-                          <p className="mt-1 text-sm text-slate-400">Key project details.</p>
-                        </div>
+                      <div>
+                        <h2 className="text-xl font-semibold text-slate-100">Project Information</h2>
+                        <p className="mt-1 text-sm text-slate-400">Key project details and metadata.</p>
                       </div>
-                      <div className="mt-6 space-y-4 text-sm text-slate-300">
+                      <div className="mt-6 grid gap-4 sm:grid-cols-2">
                         <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                          <p className="text-slate-400">Project Name</p>
+                          <p className="text-sm text-slate-400">Project Name</p>
                           <p className="mt-1 font-medium text-slate-100">{project.name}</p>
                         </div>
                         <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                          <p className="text-slate-400">Description</p>
-                          <p className="mt-1 font-medium text-slate-100">{project.description || 'No description available.'}</p>
+                          <p className="text-sm text-slate-400">Status</p>
+                          <p className="mt-1 font-medium capitalize text-slate-100">
+                            {status.label}
+                          </p>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 sm:col-span-2">
+                          <p className="text-sm text-slate-400">Description</p>
+                          <p className="mt-1 font-medium text-slate-100">
+                            {project.description || 'No description available.'}
+                          </p>
                         </div>
                         <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                          <p className="text-slate-400">Status</p>
-                          <p className="mt-1 font-medium text-slate-100">{project.status}</p>
+                          <p className="text-sm text-slate-400">Owner</p>
+                          <p className="mt-1 font-medium text-slate-100">
+                            {ownerUser?.name ?? 'Unknown'}
+                          </p>
+                          {ownerUser?.email ? (
+                            <p className="mt-1 text-sm text-slate-500">{ownerUser.email}</p>
+                          ) : null}
                         </div>
                         <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                          <p className="text-slate-400">Owner</p>
-                          <p className="mt-1 font-medium text-slate-100">{project.owner}</p>
+                          <p className="text-sm text-slate-400">Created</p>
+                          <p className="mt-1 font-medium text-slate-100">
+                            {project.createdAt
+                              ? new Date(project.createdAt).toLocaleDateString(undefined, {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                })
+                              : '—'}
+                          </p>
                         </div>
-                        <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                          <p className="text-slate-400">Created</p>
-                          <p className="mt-1 font-medium text-slate-100">{project.createdAt ? new Date(project.createdAt).toLocaleDateString() : '—'}</p>
-                        </div>
-                        <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                          <p className="text-slate-400">Updated</p>
-                          <p className="mt-1 font-medium text-slate-100">{project.updatedAt ? new Date(project.updatedAt).toLocaleDateString() : '—'}</p>
+                        <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 sm:col-span-2">
+                          <p className="text-sm text-slate-400">Last Updated</p>
+                          <p className="mt-1 font-medium text-slate-100">
+                            {project.updatedAt
+                              ? new Date(project.updatedAt).toLocaleDateString(undefined, {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                })
+                              : '—'}
+                          </p>
                         </div>
                       </div>
                     </Card>
 
                     <Card className="p-6">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-start justify-between gap-3">
                         <div>
                           <h2 className="text-xl font-semibold text-slate-100">Members</h2>
-                          <p className="mt-1 text-sm text-slate-400">Project collaborators.</p>
+                          <p className="mt-1 text-sm text-slate-400">
+                            {members.length} collaborator{members.length === 1 ? '' : 's'} on this project.
+                          </p>
                         </div>
                         <div className="rounded-2xl border border-white/10 bg-white/5 p-2">
                           <Users className="h-4 w-4 text-slate-300" />
@@ -221,24 +465,93 @@ const ProjectDetailsPage = () => {
                       </div>
 
                       {members.length === 0 ? (
-                        <div className="mt-6"><EmptyState title="No members yet" description="Invite your first teammate to the project." /></div>
+                        <div className="mt-6">
+                          <EmptyState
+                            title="No members yet"
+                            description="Invite your first teammate using the project invite code."
+                          />
+                        </div>
                       ) : (
                         <div className="mt-6 grid gap-3">
                           {members.map((member) => (
-                            <MemberCard key={member._id} user={member} isOwner={member._id === project.owner} onRemove={isOwner && member._id !== project.owner && member._id !== user?._id ? () => void handleRemoveMember(member._id) : undefined} />
+                            <MemberCard
+                              key={member._id}
+                              user={member}
+                              isOwner={String(member._id) === String(project.owner)}
+                              onRemove={
+                                canRemoveMember(member)
+                                  ? () => openRemoveMemberDialog(member)
+                                  : undefined
+                              }
+                            />
                           ))}
                         </div>
                       )}
                     </Card>
                   </div>
-                </>
+
+                  <TaskBoard
+                    projectId={project._id}
+                    members={members}
+                    isOwner={isOwner}
+                    currentUserId={user?._id}
+                    onTaskCountChange={setTaskCount}
+                    showToast={showToast}
+                  />
+                </div>
               ) : null}
             </div>
           </main>
         </div>
       </div>
 
-      <InviteMemberModal open={inviteOpen} loading={submitting} onClose={() => setInviteOpen(false)} onSubmit={handleJoinInvite} />
+      {toast ? (
+        <div
+          className={`fixed bottom-6 right-6 z-50 animate-[fadeIn_220ms_ease-out] rounded-2xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-md ${
+            toast.type === 'success'
+              ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-200'
+              : 'border-rose-400/30 bg-rose-500/15 text-rose-200'
+          }`}
+        >
+          {toast.message}
+        </div>
+      ) : null}
+
+      <InviteMemberModal
+        open={inviteOpen}
+        loading={submitting}
+        inviteCode={project?.inviteCode}
+        onClose={() => setInviteOpen(false)}
+        onCopySuccess={() => showToast('success', 'Invite code copied to clipboard.')}
+      />
+
+      <ProjectFormModal
+        open={editOpen}
+        mode="edit"
+        project={project}
+        loading={submitting}
+        onClose={() => setEditOpen(false)}
+        onSubmit={handleEditProject}
+      />
+
+      <DeleteProjectDialog
+        open={deleteOpen}
+        projectName={project?.name ?? ''}
+        loading={submitting}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDeleteProject}
+      />
+
+      <RemoveMemberDialog
+        open={removeMemberOpen}
+        memberName={memberToRemove?.name ?? ''}
+        loading={submitting}
+        onClose={() => {
+          setRemoveMemberOpen(false);
+          setMemberToRemove(null);
+        }}
+        onConfirm={handleRemoveMember}
+      />
     </div>
   );
 };

@@ -20,14 +20,18 @@ export interface Project {
   updatedAt?: string;
 }
 
+export type TaskStatus = 'Todo' | 'In_Progress' | 'Review' | 'Done';
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+
 export interface Task {
   _id: string;
   title: string;
   description?: string;
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
-  status?: 'Todo' | 'In_Progress' | 'Review' | 'Done';
+  priority?: TaskPriority;
+  status?: TaskStatus;
   dueDate?: string;
-  assignedTo?: string;
+  assignedTo?: User | string;
+  project?: string;
   projectId?: string;
   createdAt?: string;
   updatedAt?: string;
