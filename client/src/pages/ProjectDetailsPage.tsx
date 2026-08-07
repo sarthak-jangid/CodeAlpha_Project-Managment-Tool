@@ -19,6 +19,7 @@ import {
   regenerateInviteCode,
   removeProjectMember,
 } from '../api/projectDetails';
+import { getApiErrorMessage } from '../utils/error';
 import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
@@ -123,6 +124,8 @@ const ProjectDetailsPage = () => {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingMessage, setEditingMessage] = useState('');
   const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null);
+  const pageTopRef = useRef<HTMLDivElement | null>(null);
+  const mainRef = useRef<HTMLDivElement | null>(null);
   const commentsEndRef = useRef<HTMLDivElement | null>(null);
   const toastTimerRef = useRef<number | null>(null);
 
@@ -155,7 +158,7 @@ const ProjectDetailsPage = () => {
       setProject(projectResponse.project ?? null);
       setMembers(membersResponse.members ?? []);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unable to load project details.';
+      const message = getApiErrorMessage(err);
       setError(message);
     } finally {
       setLoading(false);
@@ -164,6 +167,10 @@ const ProjectDetailsPage = () => {
 
   useEffect(() => {
     void fetchProject();
+  }, [projectId]);
+
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [projectId]);
 
   const isOwner = useMemo(
@@ -264,10 +271,6 @@ const ProjectDetailsPage = () => {
     void fetchComments();
   }, [project?._id]);
 
-  useEffect(() => {
-    commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [comments]);
-
   const handleCreateComment = async (message: string) => {
     if (!project?._id) return;
     try {
@@ -352,7 +355,7 @@ const ProjectDetailsPage = () => {
         <Navbar />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar collapsed={false} onToggle={() => undefined} />
-          <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
+          <main ref={mainRef} className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
             <div className="mx-auto flex max-w-7xl flex-col gap-6">
               {loading ? (
                 <ProjectDetailsSkeleton />

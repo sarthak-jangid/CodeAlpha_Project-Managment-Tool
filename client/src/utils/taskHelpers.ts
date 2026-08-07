@@ -31,7 +31,7 @@ export const PRIORITY_ORDER: Record<TaskPriority, number> = {
 };
 
 export const getAssigneeId = (task: Task): string | undefined => {
-  if (!task.assignedTo) return undefined;
+  if (!task.assignedTo) return undefined;  
   if (typeof task.assignedTo === 'string') return task.assignedTo;
   return task.assignedTo._id;
 };
