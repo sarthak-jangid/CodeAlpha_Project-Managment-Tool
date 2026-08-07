@@ -8,7 +8,7 @@ export const Navbar = () => {
   const { user, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/75 backdrop-blur-md">
+    <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/80 backdrop-blur-md">
       <div className="flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-500/15 text-sky-300">P</div>
@@ -30,14 +30,14 @@ export const Navbar = () => {
             <Settings className="mr-2 h-4 w-4" />
             Settings
           </Button>
-          <button className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-300">
+          <button className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-300 transition-colors hover:bg-white/10 hover:text-white">
             <Bell className="h-4 w-4" />
           </button>
-          <Link to="/profile" className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200">
+          <Link to="/profile" className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 transition-colors hover:bg-white/10 hover:text-white">
             <UserCircle2 className="h-4 w-4" />
             <span className="hidden sm:inline">{user?.name ?? 'User'}</span>
           </Link>
-          <button onClick={() => void logout()} className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-300">
+          <button onClick={() => void logout()} className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-300 transition-colors hover:bg-white/10 hover:text-white">
             <LogOut className="h-4 w-4" />
           </button>
         </div>

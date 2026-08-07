@@ -52,7 +52,8 @@ export const canDeleteTask = (isOwner: boolean): boolean => isOwner;
 
 export const canAssignTask = (isOwner: boolean): boolean => isOwner;
 
-export const canChangeTaskStatus = (task: Task, userId?: string): boolean => {
+export const canChangeTaskStatus = (task: Task, userId?: string, isOwner = false): boolean => {
+  if (isOwner) return true;
   return isAssignedToUser(task, userId);
 };
 

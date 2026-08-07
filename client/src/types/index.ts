@@ -41,7 +41,7 @@ export interface Comment {
   _id: string;
   message: string;
   taskId?: string;
-  user?: User;
+  author?: User | string;
   createdAt?: string;
   updatedAt?: string;
 }

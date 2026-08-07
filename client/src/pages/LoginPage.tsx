@@ -1,8 +1,8 @@
 import { Eye, EyeOff, Loader2, Lock, Mail, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AuthCard } from '../components/common/AuthCard';
 import { Button } from '../components/common/Button';
-import { Card } from '../components/common/Card';
 import { Input } from '../components/common/Input';
 import { useAuth } from '../context/AuthContext';
 
@@ -59,13 +59,7 @@ const LoginPage = () => {
       </div>
 
       <div className="relative w-full max-w-md animate-[fadeIn_220ms_ease-out]">
-        <Card className="border-white/10 bg-slate-800/70 px-6 py-8 shadow-[0_25px_80px_rgba(2,8,23,0.45)] backdrop-blur-md sm:px-8">
-          <div className="mb-6 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500/15 text-sky-300">P</div>
-            <h1 className="text-2xl font-semibold text-slate-100">Welcome back</h1>
-            <p className="mt-2 text-sm text-slate-400">Manage your projects efficiently.</p>
-          </div>
-
+        <AuthCard title="Welcome back" subtitle="Manage your projects efficiently.">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error ? <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{error}</div> : null}
 
@@ -116,7 +110,7 @@ const LoginPage = () => {
             Don&apos;t have an account?{' '}
             <Link to="/register" className="font-medium text-sky-400 hover:text-sky-300">Create one</Link>
           </p>
-        </Card>
+        </AuthCard>
       </div>
     </div>
   );

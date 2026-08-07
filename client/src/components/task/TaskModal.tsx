@@ -121,6 +121,7 @@ export const TaskModal = ({
               onChange={(event) => setTitle(event.target.value)}
               placeholder="Design landing page"
               disabled={loading}
+              maxLength={100}
             />
           </div>
 
@@ -134,6 +135,7 @@ export const TaskModal = ({
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Describe what needs to be done"
               disabled={loading}
+              maxLength={280}
             />
           </div>
 

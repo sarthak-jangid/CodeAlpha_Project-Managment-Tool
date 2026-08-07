@@ -58,12 +58,12 @@ export const ProjectFormModal = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm text-slate-300" htmlFor="project-name">Project Name</label>
-            <Input id="project-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Marketing launch" disabled={loading} />
+            <Input id="project-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Marketing launch" disabled={loading} maxLength={80} />
           </div>
 
           <div className="space-y-2">
             <label className="text-sm text-slate-300" htmlFor="project-description">Description</label>
-            <Textarea id="project-description" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Describe the project goals" disabled={loading} />
+            <Textarea id="project-description" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Describe the project goals" disabled={loading} maxLength={280} />
           </div>
 
           <div className="space-y-2">

@@ -1,9 +1,10 @@
 import { Search, UserCheck } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { Avatar } from '../common/Avatar';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { Modal } from '../common/Modal';
-import { getAssigneeId, getInitials } from '../../utils/taskHelpers';
+import { getAssigneeId } from '../../utils/taskHelpers';
 import type { Task, User } from '../../types';
 
 export const AssignModal = ({
@@ -104,17 +105,7 @@ export const AssignModal = ({
                       : 'border-white/10 bg-slate-900/60 hover:border-sky-500/20 hover:bg-slate-800/70'
                   }`}
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-500/15 text-sm font-semibold text-sky-300">
-                    {member.avatar ? (
-                      <img
-                        src={member.avatar}
-                        alt={member.name}
-                        className="h-10 w-10 rounded-2xl object-cover"
-                      />
-                    ) : (
-                      getInitials(member.name)
-                    )}
-                  </div>
+                  <Avatar src={member.avatar} name={member.name} size="md" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-slate-100">{member.name}</p>
                     <p className="truncate text-sm text-slate-400">@{member.username}</p>

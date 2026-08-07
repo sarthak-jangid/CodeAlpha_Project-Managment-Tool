@@ -1,5 +1,6 @@
 import { Crown, UserMinus } from 'lucide-react';
 import type { User } from '../../types';
+import { Avatar } from '../common/Avatar';
 import { Button } from '../common/Button';
 
 export const MemberCard = ({
@@ -11,24 +12,11 @@ export const MemberCard = ({
   isOwner: boolean;
   onRemove?: () => void;
 }) => {
-  const initials = user.name
-    .split(' ')
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
-
   return (
     <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-sky-500/30 hover:shadow-[0_12px_30px_rgba(59,130,246,0.08)]">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-sky-500/15 text-sm font-semibold text-sky-300">
-            {user.avatar ? (
-              <img src={user.avatar} alt={user.name} className="h-11 w-11 rounded-2xl object-cover" />
-            ) : (
-              initials
-            )}
-          </div>
+          <Avatar src={user.avatar} name={user.name} size="lg" />
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <p className="truncate font-medium text-slate-100">{user.name}</p>

@@ -7,6 +7,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { Avatar } from '../common/Avatar';
 import { Badge } from '../common/Badge';
 import { PriorityBadge } from './PriorityBadge';
 import { StatusDropdown } from './StatusDropdown';
@@ -19,7 +20,6 @@ import {
   canEditTask,
   formatDueDate,
   getAssigneeUser,
-  getInitials,
 } from '../../utils/taskHelpers';
 import type { Task, TaskStatus } from '../../types';
 
@@ -51,7 +51,7 @@ export const TaskCard = ({
   const showEdit = canEditTask(isOwner);
   const showDelete = canDeleteTask(isOwner);
   const showAssign = canAssignTask(isOwner);
-  const showStatus = canChangeTaskStatus(task, currentUserId);
+  const showStatus = canChangeTaskStatus(task, currentUserId, isOwner);
 
   const hasActions = showEdit || showDelete || showAssign || showStatus;
 
@@ -151,17 +151,7 @@ export const TaskCard = ({
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/5 pt-4">
         {assignee ? (
           <div className="flex min-w-0 items-center gap-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-xs font-semibold text-sky-300">
-              {assignee.avatar ? (
-                <img
-                  src={assignee.avatar}
-                  alt={assignee.name}
-                  className="h-8 w-8 rounded-xl object-cover"
-                />
-              ) : (
-                getInitials(assignee.name)
-              )}
-            </div>
+            <Avatar src={assignee.avatar} name={assignee.name} size="sm" className="rounded-xl" />
             <span className="truncate text-sm text-slate-300">{assignee.name}</span>
           </div>
         ) : (

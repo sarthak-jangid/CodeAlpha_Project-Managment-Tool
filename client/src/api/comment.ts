@@ -1,13 +1,13 @@
 import api from './axios';
 import type { ApiResponse, Comment } from '../types';
 
-export const getCommentsByTask = async (taskId: string) => {
-  const { data } = await api.get<ApiResponse<Comment[]>>(`/tasks/${taskId}/comments`);
+export const getCommentsByProject = async (projectId: string) => {
+  const { data } = await api.get<ApiResponse<Comment[]>>(`/projects/${projectId}/comments`);
   return data;
 };
 
-export const createComment = async (taskId: string, payload: { message: string }) => {
-  const { data } = await api.post<ApiResponse<Comment>>(`/tasks/${taskId}/comments`, payload);
+export const createComment = async (projectId: string, payload: { message: string }) => {
+  const { data } = await api.post<ApiResponse<Comment>>(`/projects/${projectId}/comments`, payload);
   return data;
 };
 

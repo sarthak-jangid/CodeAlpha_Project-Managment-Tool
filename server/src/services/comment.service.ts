@@ -76,12 +76,38 @@ export class CommentService {
     return comment;
   }
 
+  async createProjectComment(projectId: string, userId: string, input: ICreateCommentInput) {
+    if (!input.message || input.message.trim() === "") {
+      throw new Error("Comment message is required.");
+    }
+
+    const project = await this.getProjectOrThrow(projectId);
+    await this.validateProjectAccess(project, userId);
+
+    const comment = await Comment.create({
+      message: input.message.trim(),
+      project: project._id,
+      author: userId,
+    });
+
+    return comment;
+  }
+
   async getCommentsByTask(taskId: string, userId: string) {
     const task = await this.getTaskOrThrow(taskId);
     const project = await this.getProjectOrThrow(task.project.toString());
     await this.validateProjectAccess(project, userId);
 
     return Comment.find({ task: task._id })
+      .populate("author", "name username avatar")
+      .sort({ createdAt: 1 });
+  }
+
+  async getCommentsByProject(projectId: string, userId: string) {
+    const project = await this.getProjectOrThrow(projectId);
+    await this.validateProjectAccess(project, userId);
+
+    return Comment.find({ project: project._id })
       .populate("author", "name username avatar")
       .sort({ createdAt: 1 });
   }
@@ -111,8 +137,18 @@ export class CommentService {
 
   async deleteComment(commentId: string, userId: string) {
     const comment = await this.getCommentOrThrow(commentId);
-    const task = await this.getTaskOrThrow(comment.task.toString());
-    const project = await this.getProjectOrThrow(task.project.toString());
+
+    let project;
+    const taskId = comment.task?.toString();
+
+    if (taskId) {
+      const task = await this.getTaskOrThrow(taskId);
+      project = await this.getProjectOrThrow(task.project.toString());
+    } else if (comment.project) {
+      project = await this.getProjectOrThrow(comment.project.toString());
+    } else {
+      throw new Error("Comment is not linked to a task or project.");
+    }
 
     const isAuthor = comment.author.toString() === userId;
     const isOwner = this.isOwner(project, userId);

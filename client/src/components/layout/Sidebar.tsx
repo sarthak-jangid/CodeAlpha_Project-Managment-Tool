@@ -25,7 +25,7 @@ export const Sidebar = ({ collapsed, onToggle }: { collapsed: boolean; onToggle:
             </div>
           )}
         </div>
-        <button onClick={onToggle} className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-300">
+        <button onClick={onToggle} className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-300 transition-colors hover:bg-white/10 hover:text-white">
           {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
         </button>
       </div>

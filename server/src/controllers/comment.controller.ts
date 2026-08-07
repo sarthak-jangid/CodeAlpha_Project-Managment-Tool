@@ -23,6 +23,20 @@ const getTaskId = (req: Request): string => {
   return taskId;
 };
 
+const getProjectId = (req: Request): string => {
+  const projectId = req.params.projectId;
+
+  if (Array.isArray(projectId)) {
+    throw new Error("Invalid project id");
+  }
+
+  if (typeof projectId !== "string" || projectId.trim() === "") {
+    throw new Error("Invalid project id");
+  }
+
+  return projectId;
+};
+
 const getCommentId = (req: Request): string => {
   const commentId = req.params.commentId;
 
@@ -57,6 +71,26 @@ export const createComment = async (req: Request, res: Response, next: NextFunct
   }
 };
 
+export const createProjectComment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+
+    if (!authReq.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const projectId = getProjectId(req);
+    const comment = await commentService.createProjectComment(projectId, authReq.user._id.toString(), req.body);
+
+    return sendCommentResponse(res, 201, {
+      message: "Comment created successfully",
+      comment,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const getComments = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authReq = req as AuthenticatedRequest;
@@ -67,6 +101,25 @@ export const getComments = async (req: Request, res: Response, next: NextFunctio
 
     const taskId = getTaskId(req);
     const comments = await commentService.getCommentsByTask(taskId, authReq.user._id.toString());
+
+    return sendCommentResponse(res, 200, {
+      comments,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getProjectComments = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+
+    if (!authReq.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const projectId = getProjectId(req);
+    const comments = await commentService.getCommentsByProject(projectId, authReq.user._id.toString());
 
     return sendCommentResponse(res, 200, {
       comments,

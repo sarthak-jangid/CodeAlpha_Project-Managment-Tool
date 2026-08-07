@@ -10,7 +10,7 @@ import {
   Users,
   ListTodo,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { deleteProject, updateProject } from '../api/project';
 import {
@@ -31,8 +31,12 @@ import { MemberCard } from '../components/project/MemberCard';
 import { ProjectFormModal } from '../components/project/ProjectFormModal';
 import { RemoveMemberDialog } from '../components/project/RemoveMemberDialog';
 import { TaskBoard } from '../components/task/TaskBoard';
+import { CommentInput } from '../components/comment/CommentInput';
+import { CommentList } from '../components/comment/CommentList';
+import { DeleteCommentDialog } from '../components/comment/DeleteCommentDialog';
 import { useAuth } from '../context/AuthContext';
-import type { Project, User } from '../types';
+import { createComment, deleteComment, getCommentsByProject, updateComment } from '../api/comment';
+import type { Comment, Project, User } from '../types';
 
 type Toast = {
   type: 'success' | 'error';
@@ -111,10 +115,32 @@ const ProjectDetailsPage = () => {
   const [removeMemberOpen, setRemoveMemberOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<User | null>(null);
   const [taskCount, setTaskCount] = useState(0);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(true);
+  const [commentsError, setCommentsError] = useState('');
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [commentDraft, setCommentDraft] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingMessage, setEditingMessage] = useState('');
+  const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null);
+  const commentsEndRef = useRef<HTMLDivElement | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   const showToast = (type: Toast['type'], message: string) => {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+
     setToast({ type, message });
-    setTimeout(() => setToast(null), 3200);
+    toastTimerRef.current = window.setTimeout(() => setToast(null), 3200);
   };
 
   const fetchProject = async () => {
@@ -217,6 +243,83 @@ const ProjectDetailsPage = () => {
   const openRemoveMemberDialog = (member: User) => {
     setMemberToRemove(member);
     setRemoveMemberOpen(true);
+  };
+
+  const fetchComments = async () => {
+    if (!project?._id) return;
+    try {
+      setCommentsLoading(true);
+      setCommentsError('');
+      const response = await getCommentsByProject(project._id);
+      setComments(response.comments ?? []);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unable to load comments.';
+      setCommentsError(message);
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void fetchComments();
+  }, [project?._id]);
+
+  useEffect(() => {
+    commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [comments]);
+
+  const handleCreateComment = async (message: string) => {
+    if (!project?._id) return;
+    try {
+      setCommentSubmitting(true);
+      await createComment(project._id, { message });
+      setCommentDraft('');
+      await fetchComments();
+      showToast('success', 'Comment sent.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unable to create comment.';
+      showToast('error', message);
+    } finally {
+      setCommentSubmitting(false);
+    }
+  };
+
+  const handleEditComment = async (comment: Comment) => {
+    setEditingCommentId(comment._id);
+    setEditingMessage(comment.message);
+  };
+
+  const handleSaveEdit = async (message: string) => {
+    if (!editingCommentId) return;
+    try {
+      setCommentSubmitting(true);
+      await updateComment(editingCommentId, { message });
+      setEditingCommentId(null);
+      setEditingMessage('');
+      await fetchComments();
+      showToast('success', 'Comment updated.');
+    } catch (err: unknown) {
+      const messageText = err instanceof Error ? err.message : 'Unable to update comment.';
+      showToast('error', messageText);
+    } finally {
+      setCommentSubmitting(false);
+    }
+  };
+
+  const handleDeleteComment = async () => {
+    if (!deleteCommentId) return;
+    try {
+      setCommentSubmitting(true);
+      await deleteComment(deleteCommentId);
+      setDeleteCommentId(null);
+      await fetchComments();
+      showToast('success', 'Comment deleted.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unable to delete comment.';
+      showToast('error', message);
+    } finally {
+      setCommentSubmitting(false);
+    }
   };
 
   const handleRemoveMember = async () => {
@@ -351,7 +454,7 @@ const ProjectDetailsPage = () => {
                           <MessageSquare className="h-4 w-4" />
                           Comments
                         </div>
-                        <p className="mt-2 text-2xl font-semibold text-slate-100">0</p>
+                        <p className="mt-2 text-2xl font-semibold text-slate-100">{comments.length}</p>
                       </div>
                     </div>
 
@@ -498,6 +601,48 @@ const ProjectDetailsPage = () => {
                     onTaskCountChange={setTaskCount}
                     showToast={showToast}
                   />
+
+                  <Card className="p-6">
+                    <div className="flex flex-col gap-2">
+                      <h2 className="text-xl font-semibold text-slate-100">Comments</h2>
+                      <p className="text-sm text-slate-400">Collaborate with your team.</p>
+                    </div>
+
+                    <div className="mt-6 space-y-4">
+                      <CommentInput
+                        loading={commentSubmitting}
+                        initialValue={commentDraft}
+                        onSubmit={async (message) => {
+                          setCommentDraft(message);
+                          await handleCreateComment(message);
+                        }}
+                        onCancel={() => setCommentDraft('')}
+                      />
+
+                      <div className="max-h-[560px] space-y-3 overflow-y-auto pr-1">
+                        <CommentList
+                          comments={comments}
+                          loading={commentsLoading}
+                          error={commentsError}
+                          currentUserId={user?._id}
+                          canManageComments={isOwner}
+                          editingCommentId={editingCommentId}
+                          editingMessage={editingMessage}
+                          submitting={commentSubmitting}
+                          onEdit={handleEditComment}
+                          onDelete={(comment) => setDeleteCommentId(comment._id)}
+                          onEditValueChange={setEditingMessage}
+                          onSaveEdit={(message) => void handleSaveEdit(message)}
+                          onCancelEdit={() => {
+                            setEditingCommentId(null);
+                            setEditingMessage('');
+                          }}
+                          onRetry={() => void fetchComments()}
+                        />
+                        <div ref={commentsEndRef} />
+                      </div>
+                    </div>
+                  </Card>
                 </div>
               ) : null}
             </div>
@@ -507,6 +652,8 @@ const ProjectDetailsPage = () => {
 
       {toast ? (
         <div
+          role="status"
+          aria-live="polite"
           className={`fixed bottom-6 right-6 z-50 animate-[fadeIn_220ms_ease-out] rounded-2xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-md ${
             toast.type === 'success'
               ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-200'
@@ -551,6 +698,14 @@ const ProjectDetailsPage = () => {
           setMemberToRemove(null);
         }}
         onConfirm={handleRemoveMember}
+      />
+
+      <DeleteCommentDialog
+        open={Boolean(deleteCommentId)}
+        commentPreview={comments.find((comment) => comment._id === deleteCommentId)?.message ?? ''}
+        loading={commentSubmitting}
+        onClose={() => setDeleteCommentId(null)}
+        onConfirm={() => void handleDeleteComment()}
       />
     </div>
   );

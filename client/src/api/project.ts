@@ -1,5 +1,5 @@
 import api from './axios';
-import type { ApiResponse, Project } from '../types';
+import type { ApiResponse, Project, User } from '../types';
 
 export const getProjects = async () => {
   const { data } = await api.get<ApiResponse<Project[]>>('/projects');
@@ -27,6 +27,6 @@ export const joinProject = async (inviteCode: string) => {
 };
 
 export const getProjectMembers = async (projectId: string) => {
-  const { data } = await api.get<ApiResponse<any>>(`/projects/${projectId}/members`);
+  const { data } = await api.get<ApiResponse<User[]>>(`/projects/${projectId}/members`);
   return data;
 };
