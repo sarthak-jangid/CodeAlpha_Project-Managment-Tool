@@ -124,7 +124,6 @@ const ProjectDetailsPage = () => {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingMessage, setEditingMessage] = useState('');
   const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null);
-  const pageTopRef = useRef<HTMLDivElement | null>(null);
   const mainRef = useRef<HTMLDivElement | null>(null);
   const commentsEndRef = useRef<HTMLDivElement | null>(null);
   const toastTimerRef = useRef<number | null>(null);
@@ -205,8 +204,7 @@ const ProjectDetailsPage = () => {
       setProject((prev) => (prev ? { ...prev, inviteCode: response.inviteCode } : prev));
       showToast('success', 'Invite code regenerated successfully.');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unable to regenerate invite code.';
-      showToast('error', message);
+      showToast('error', getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -225,8 +223,7 @@ const ProjectDetailsPage = () => {
       await fetchProject();
       showToast('success', 'Project updated successfully.');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unable to update project.';
-      showToast('error', message);
+      showToast('error', getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -240,8 +237,7 @@ const ProjectDetailsPage = () => {
       setDeleteOpen(false);
       navigate('/dashboard');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unable to delete project.';
-      showToast('error', message);
+      showToast('error', getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -260,8 +256,7 @@ const ProjectDetailsPage = () => {
       const response = await getCommentsByProject(project._id);
       setComments(response.comments ?? []);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unable to load comments.';
-      setCommentsError(message);
+      setCommentsError(getApiErrorMessage(err));
     } finally {
       setCommentsLoading(false);
     }
@@ -280,8 +275,7 @@ const ProjectDetailsPage = () => {
       await fetchComments();
       showToast('success', 'Comment sent.');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unable to create comment.';
-      showToast('error', message);
+      showToast('error', getApiErrorMessage(err));
     } finally {
       setCommentSubmitting(false);
     }
@@ -302,8 +296,7 @@ const ProjectDetailsPage = () => {
       await fetchComments();
       showToast('success', 'Comment updated.');
     } catch (err: unknown) {
-      const messageText = err instanceof Error ? err.message : 'Unable to update comment.';
-      showToast('error', messageText);
+      showToast('error', getApiErrorMessage(err));
     } finally {
       setCommentSubmitting(false);
     }
@@ -318,8 +311,7 @@ const ProjectDetailsPage = () => {
       await fetchComments();
       showToast('success', 'Comment deleted.');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unable to delete comment.';
-      showToast('error', message);
+      showToast('error', getApiErrorMessage(err));
     } finally {
       setCommentSubmitting(false);
     }
@@ -335,8 +327,7 @@ const ProjectDetailsPage = () => {
       await fetchProject();
       showToast('success', 'Member removed successfully.');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unable to remove member.';
-      showToast('error', message);
+      showToast('error', getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

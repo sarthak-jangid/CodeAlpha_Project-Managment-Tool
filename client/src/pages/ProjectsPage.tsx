@@ -1,6 +1,6 @@
 import { FolderPlus, Plus, RefreshCw, Search as SearchIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createProject, deleteProject, getProjects, joinProject, updateProject } from '../api/project';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/common/Button';
@@ -15,14 +15,16 @@ import { JoinProjectModal } from '../components/project/JoinProjectModal';
 import { ProjectCard } from '../components/project/ProjectCard';
 import { ProjectFormModal } from '../components/project/ProjectFormModal';
 import type { Project } from '../types';
+import { getApiErrorMessage } from '../utils/error';
 
 const ProjectsPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(searchParams.get('search') ?? '');
   const [statusFilter, setStatusFilter] = useState<Project['status'] | 'all'>('all');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -38,7 +40,7 @@ const ProjectsPage = () => {
       const response = await getProjects();
       setProjects(response.projects ?? []);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Unable to load projects.');
+      setError(getApiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -47,6 +49,10 @@ const ProjectsPage = () => {
   useEffect(() => {
     void fetchProjects();
   }, []);
+
+  useEffect(() => {
+    setSearch(searchParams.get('search') ?? '');
+  }, [searchParams]);
 
   const filteredProjects = useMemo(() => {
     const term = search.toLowerCase();
@@ -69,7 +75,7 @@ const ProjectsPage = () => {
       setIsCreateOpen(false);
       await fetchProjects();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Unable to create project.');
+      setError(getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -84,7 +90,7 @@ const ProjectsPage = () => {
       setSelectedProject(null);
       await fetchProjects();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Unable to update project.');
+      setError(getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -99,7 +105,7 @@ const ProjectsPage = () => {
       setSelectedProject(null);
       await fetchProjects();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Unable to delete project.');
+      setError(getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -112,7 +118,7 @@ const ProjectsPage = () => {
       setIsJoinOpen(false);
       await fetchProjects();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Unable to join project.');
+      setError(getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -152,7 +158,18 @@ const ProjectsPage = () => {
                     <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <Input
                       value={search}
-                      onChange={(event) => setSearch(event.target.value)}
+                      onChange={(event) => {
+                        const nextValue = event.target.value;
+                        setSearch(nextValue);
+
+                        const nextParams = new URLSearchParams(searchParams);
+                        if (nextValue.trim()) {
+                          nextParams.set('search', nextValue.trim());
+                        } else {
+                          nextParams.delete('search');
+                        }
+                        setSearchParams(nextParams);
+                      }}
                       placeholder="Search projects by name or description"
                       className="pl-10"
                     />

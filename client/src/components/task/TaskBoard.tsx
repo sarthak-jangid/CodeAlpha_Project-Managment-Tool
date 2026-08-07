@@ -30,6 +30,7 @@ import {
   getAssigneeId,
   toIsoDueDate,
 } from '../../utils/taskHelpers';
+import { getApiErrorMessage } from '../../utils/error';
 import type { Task, TaskPriority, TaskStatus, User } from '../../types';
 
 type SortOption = 'newest' | 'oldest' | 'dueDate' | 'priority';
@@ -93,8 +94,7 @@ export const TaskBoard = ({
       setTasks(nextTasks);
       onTaskCountChange?.(nextTasks.length);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unable to load tasks.';
-      setError(message);
+      setError(getApiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -212,8 +212,7 @@ export const TaskBoard = ({
       await fetchTasks();
       showToast('success', 'Task created successfully.');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unable to create task.';
-      showToast('error', message);
+      showToast('error', getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -235,8 +234,7 @@ export const TaskBoard = ({
       await fetchTasks();
       showToast('success', 'Task updated successfully.');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unable to update task.';
-      showToast('error', message);
+      showToast('error', getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -253,8 +251,7 @@ export const TaskBoard = ({
       await fetchTasks();
       showToast('success', 'Task assigned successfully.');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unable to assign task.';
-      showToast('error', message);
+      showToast('error', getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -271,8 +268,7 @@ export const TaskBoard = ({
       await fetchTasks();
       showToast('success', 'Task deleted successfully.');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unable to delete task.';
-      showToast('error', message);
+      showToast('error', getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -285,8 +281,7 @@ export const TaskBoard = ({
       await fetchTasks();
       showToast('success', 'Task status updated.');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unable to update task status.';
-      showToast('error', message);
+      showToast('error', getApiErrorMessage(err));
     } finally {
       setUpdatingTaskId(null);
     }

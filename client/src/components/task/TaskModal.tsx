@@ -92,8 +92,8 @@ export const TaskModal = ({
 
   return (
     <Modal open={open} onClose={onClose} className="max-w-xl">
-      <div className="space-y-4">
-        <div>
+      <div className="flex max-h-[90vh] flex-col">
+        <div className="shrink-0 border-b border-white/10 px-1 pb-4">
           <h3 className="text-xl font-semibold text-slate-100">
             {mode === 'create' ? 'Create Task' : 'Edit Task'}
           </h3>
@@ -105,123 +105,129 @@ export const TaskModal = ({
         </div>
 
         {error ? (
-          <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+          <div className="mt-4 shrink-0 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
             {error}
           </div>
         ) : null}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm text-slate-300" htmlFor="task-title">
-              Title
-            </label>
-            <Input
-              id="task-title"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Design landing page"
-              disabled={loading}
-              maxLength={100}
-            />
+        <form onSubmit={handleSubmit} className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto pr-1">
+            <div className="space-y-4 pb-2">
+              <div className="space-y-2">
+                <label className="text-sm text-slate-300" htmlFor="task-title">
+                  Title
+                </label>
+                <Input
+                  id="task-title"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  placeholder="Design landing page"
+                  disabled={loading}
+                  maxLength={100}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm text-slate-300" htmlFor="task-description">
+                  Description
+                </label>
+                <Textarea
+                  id="task-description"
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  placeholder="Describe what needs to be done"
+                  disabled={loading}
+                  maxLength={280}
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm text-slate-300" htmlFor="task-priority">
+                    Priority
+                  </label>
+                  <select
+                    id="task-priority"
+                    value={priority}
+                    onChange={(event) => setPriority(event.target.value as TaskPriority)}
+                    className={selectClassName}
+                    disabled={loading}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm text-slate-300" htmlFor="task-due-date">
+                    Due Date
+                  </label>
+                  <Input
+                    id="task-due-date"
+                    type="date"
+                    value={dueDate}
+                    onChange={(event) => setDueDate(event.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              {showAssignField ? (
+                <div className="space-y-2">
+                  <label className="text-sm text-slate-300" htmlFor="task-assignee">
+                    Assign Member (optional)
+                  </label>
+                  <select
+                    id="task-assignee"
+                    value={assignedTo}
+                    onChange={(event) => setAssignedTo(event.target.value)}
+                    className={selectClassName}
+                    disabled={loading}
+                  >
+                    <option value="">Unassigned</option>
+                    {members.map((member) => (
+                      <option key={member._id} value={member._id}>
+                        {member.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+
+              {showStatusField ? (
+                <div className="space-y-2">
+                  <label className="text-sm text-slate-300" htmlFor="task-status">
+                    Status
+                  </label>
+                  <select
+                    id="task-status"
+                    value={status}
+                    onChange={(event) => setStatus(event.target.value as TaskStatus)}
+                    className={selectClassName}
+                    disabled={loading}
+                  >
+                    {TASK_STATUSES.map((item) => (
+                      <option key={item} value={item}>
+                        {STATUS_LABELS[item]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm text-slate-300" htmlFor="task-description">
-              Description
-            </label>
-            <Textarea
-              id="task-description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="Describe what needs to be done"
-              disabled={loading}
-              maxLength={280}
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm text-slate-300" htmlFor="task-priority">
-                Priority
-              </label>
-              <select
-                id="task-priority"
-                value={priority}
-                onChange={(event) => setPriority(event.target.value as TaskPriority)}
-                className={selectClassName}
-                disabled={loading}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
+          <div className="shrink-0 border-t border-white/10 bg-slate-900/70 px-1 pt-4">
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="ghost" onClick={onClose} disabled={loading}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" disabled={loading}>
+                {loading ? 'Saving...' : mode === 'create' ? 'Create' : 'Update'}
+              </Button>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-sm text-slate-300" htmlFor="task-due-date">
-                Due Date
-              </label>
-              <Input
-                id="task-due-date"
-                type="date"
-                value={dueDate}
-                onChange={(event) => setDueDate(event.target.value)}
-                disabled={loading}
-              />
-            </div>
-          </div>
-
-          {showAssignField ? (
-            <div className="space-y-2">
-              <label className="text-sm text-slate-300" htmlFor="task-assignee">
-                Assign Member (optional)
-              </label>
-              <select
-                id="task-assignee"
-                value={assignedTo}
-                onChange={(event) => setAssignedTo(event.target.value)}
-                className={selectClassName}
-                disabled={loading}
-              >
-                <option value="">Unassigned</option>
-                {members.map((member) => (
-                  <option key={member._id} value={member._id}>
-                    {member.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : null}
-
-          {showStatusField ? (
-            <div className="space-y-2">
-              <label className="text-sm text-slate-300" htmlFor="task-status">
-                Status
-              </label>
-              <select
-                id="task-status"
-                value={status}
-                onChange={(event) => setStatus(event.target.value as TaskStatus)}
-                className={selectClassName}
-                disabled={loading}
-              >
-                {TASK_STATUSES.map((item) => (
-                  <option key={item} value={item}>
-                    {STATUS_LABELS[item]}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : null}
-
-          <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="ghost" onClick={onClose} disabled={loading}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" disabled={loading}>
-              {loading ? 'Saving...' : mode === 'create' ? 'Create' : 'Update'}
-            </Button>
           </div>
         </form>
       </div>

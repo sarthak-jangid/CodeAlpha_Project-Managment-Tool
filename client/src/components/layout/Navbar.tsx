@@ -1,6 +1,6 @@
 import { Bell, ChevronDown, Menu, Search, Settings, UserCircle2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSidebar } from '../../context/SidebarContext';
 import { Input } from '../common/Input';
@@ -9,7 +9,9 @@ export const Navbar = () => {
   const { user, logout } = useAuth();
   const { openMobile } = useSidebar();
   const navigate = useNavigate();
+  const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -21,6 +23,27 @@ export const Navbar = () => {
     window.addEventListener('mousedown', handleClick);
     return () => window.removeEventListener('mousedown', handleClick);
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setSearchQuery(params.get('search') ?? '');
+  }, [location.search]);
+
+  const handleSearchSubmit = (event?: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event) {
+      if (event.key !== 'Enter') {
+        return;
+      }
+    }
+
+    const trimmed = searchQuery.trim();
+    if (trimmed) {
+      navigate(`/projects?search=${encodeURIComponent(trimmed)}`);
+      return;
+    }
+
+    navigate('/projects');
+  };
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
@@ -46,11 +69,17 @@ export const Navbar = () => {
             </div>
           </div>
 
-          <div className="pointer-events-none absolute inset-x-0 top-1/2 hidden -translate-y-1/2 items-center justify-center lg:flex">
+          <div className="absolute inset-x-0 top-1/2 hidden -translate-y-1/2 items-center justify-center lg:flex">
             <div className="w-full max-w-2xl">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input placeholder="Search projects or tasks" className="w-full pl-11 pr-4" />
+                <Input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onKeyDown={handleSearchSubmit}
+                  placeholder="Search projects"
+                  className="w-full pl-11 pr-4"
+                />
               </div>
             </div>
           </div>

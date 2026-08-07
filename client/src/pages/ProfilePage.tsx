@@ -11,6 +11,7 @@ import { Loader } from '../components/common/Loader';
 import { Navbar } from '../components/layout/Navbar';
 import { Sidebar } from '../components/layout/Sidebar';
 import type { Project } from '../types';
+import { getApiErrorMessage } from '../utils/error';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ const ProfilePage = () => {
         setAssignedTasks(assigned);
         setCompletedTasks(completed);
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Unable to load profile data.');
+        setError(getApiErrorMessage(err));
       } finally {
         setLoadingProjects(false);
       }

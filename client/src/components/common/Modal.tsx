@@ -1,9 +1,11 @@
 import { X } from 'lucide-react';
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '../../utils/cn';
 
 export const Modal = ({ open, onClose, children, className }: { open: boolean; onClose: () => void; children: ReactNode; className?: string }) => {
   const modalRef = useRef<HTMLDivElement | null>(null);
+  const portalRoot = typeof document !== 'undefined' ? document.body : null;
 
   useEffect(() => {
     if (!open) return;
@@ -15,6 +17,7 @@ export const Modal = ({ open, onClose, children, className }: { open: boolean; o
     };
 
     const previouslyFocused = document.activeElement as HTMLElement | null;
+    const previousBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     document.addEventListener('keydown', handleKeyDown);
 
@@ -23,16 +26,16 @@ export const Modal = ({ open, onClose, children, className }: { open: boolean; o
     });
 
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = previousBodyOverflow;
       document.removeEventListener('keydown', handleKeyDown);
       previouslyFocused?.focus();
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !portalRoot) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6 backdrop-blur-xl" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/70 px-4 py-6 backdrop-blur-xl" onClick={onClose}>
       <div
         ref={modalRef}
         role="dialog"
@@ -58,6 +61,7 @@ export const Modal = ({ open, onClose, children, className }: { open: boolean; o
           <div className="max-h-[calc(90vh-72px)] overflow-y-auto px-6 py-5">{children}</div>
         </div>
       </div>
-    </div>
+    </div>,
+    portalRoot,
   );
 };

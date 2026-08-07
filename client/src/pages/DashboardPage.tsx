@@ -14,6 +14,7 @@ import { JoinProjectModal } from '../components/project/JoinProjectModal';
 import { ProjectCard } from '../components/project/ProjectCard';
 import { ProjectFormModal } from '../components/project/ProjectFormModal';
 import type { Project } from '../types';
+import { getApiErrorMessage } from '../utils/error';
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -55,7 +56,7 @@ const DashboardPage = () => {
       setAssignedTasks(assigned);
       setCompletedTasks(completed);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Unable to load dashboard data.');
+      setError(getApiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -78,7 +79,7 @@ const DashboardPage = () => {
       setIsCreateOpen(false);
       void fetchDashboard();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Unable to create project.');
+      setError(getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -91,7 +92,7 @@ const DashboardPage = () => {
       setIsJoinOpen(false);
       void fetchDashboard();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Unable to join project.');
+      setError(getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

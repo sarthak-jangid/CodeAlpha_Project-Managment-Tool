@@ -5,6 +5,7 @@ import { AuthCard } from '../components/common/AuthCard';
 import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
 import { useAuth } from '../context/AuthContext';
+import { getApiErrorMessage } from '../utils/error';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -59,8 +60,7 @@ const RegisterPage = () => {
       });
       navigate('/dashboard');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unable to create your account right now.';
-      setError(message);
+      setError(getApiErrorMessage(err));
     } finally {
       setLoading(false);
     }
