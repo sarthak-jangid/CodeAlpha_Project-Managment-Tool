@@ -1,7 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { Button } from './components/common/Button';
 import { Card } from './components/common/Card';
-import { useAuth } from './context/AuthContext';
 import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
